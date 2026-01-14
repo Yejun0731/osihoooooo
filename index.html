@@ -6,10 +6,6 @@
     <title>비트 세포막 투과성 분석기</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js" type="module"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js" type="module"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
         
@@ -24,7 +20,6 @@
             border-radius: 1.25rem;
             background-color: #f8fafc;
             min-height: 450px;
-            /* Flex properties for centering */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -40,6 +35,8 @@
             border-radius: 0.75rem;
             max-width: 100%;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            height: auto;
         }
         .temp-selection {
             position: absolute;
@@ -97,33 +94,16 @@
             height: 420px;
             width: 100%;
         }
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            backdrop-filter: blur(4px);
-        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-10 text-slate-900">
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="flex flex-col items-center">
-            <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-4 font-bold text-slate-700">서버와 통신 중...</p>
-        </div>
-    </div>
-
     <div class="max-w-7xl mx-auto">
-        <header class="mb-10 text-center flex flex-col items-center">
+        <header class="mb-10 text-center">
             <span class="inline-block px-4 py-1.5 mb-2 text-[10px] font-extrabold tracking-widest text-blue-600 uppercase bg-blue-50 rounded-full">Biological Analysis System</span>
             <div class="text-xs font-bold text-slate-400 mb-1 tracking-tight">여수고등학교 생명과학실험</div>
             <div class="text-[11px] font-bold text-slate-500 mb-4 tracking-wider">서예준 오시후</div>
             <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">비트 세포막 투과성 분석기</h1>
-            <p class="text-slate-500 mt-3 font-medium max-w-2xl mx-auto text-center">실험 이미지에서 색농도를 정밀하게 추출하여 세포막의 투과성 변화를 정량적으로 분석합니다.</p>
+            <p class="text-slate-500 mt-3 font-medium max-w-2xl mx-auto">실험 이미지에서 색농도를 정밀하게 추출하여 세포막의 투과성 변화를 정량적으로 분석합니다.</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -131,105 +111,41 @@
                 <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex flex-wrap items-center justify-between mb-8 gap-4">
                         <div class="flex flex-wrap gap-2">
-                            <button onclick="window.switchSlot(0)" id="slotBtn0" class="slot-btn active px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">10분</button>
-                            <button onclick="window.switchSlot(1)" id="slotBtn1" class="slot-btn px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">15분</button>
-                            <button onclick="window.switchSlot(2)" id="slotBtn2" class="slot-btn px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">20분</button>
-                            <button onclick="window.switchSlot(3)" id="slotBtn3" class="slot-btn px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">24시간</button>
+                            <button onclick="switchSlot(0)" id="slotBtn0" class="slot-btn active px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">10분</button>
+                            <button onclick="switchSlot(1)" id="slotBtn1" class="slot-btn px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">15분</button>
+                            <button onclick="switchSlot(2)" id="slotBtn2" class="slot-btn px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">20분</button>
+                            <button onclick="switchSlot(3)" id="slotBtn3" class="slot-btn px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-bold transition">24시간</button>
                         </div>
                         <div class="flex gap-3">
                             <input type="file" id="imageInput" accept="image/*" class="hidden">
                             <label for="imageInput" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-2xl cursor-pointer transition text-xs shadow-md font-bold flex items-center">
                                 사진 업로드
                             </label>
-                            <button id="clearCurrentSlot" class="text-xs text-rose-500 hover:bg-rose-50 px-4 py-2.5 rounded-2xl transition font-bold border border-rose-100">슬롯 비우기</button>
+                            <button id="clearBoxes" class="text-xs text-rose-500 hover:bg-rose-50 px-4 py-2.5 rounded-2xl transition font-bold border border-rose-100">초기화</button>
                         </div>
                     </div>
 
                     <div id="canvas-container">
-                        <div id="placeholder" class="text-slate-400 text-center select-none p-10 flex flex-col items-center">
-                            <div class="bg-white w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-slate-100 rotate-3 transition hover:rotate-0">
+                        <div id="placeholder" class="text-slate-400 text-center select-none p-10">
+                            <div class="bg-white w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100 rotate-3 transition hover:rotate-0">
                                 <span class="text-5xl">🔬</span>
                             </div>
                             <p class="text-xl font-bold text-slate-700">분석 대기 중</p>
                             <p class="text-sm text-slate-400 mt-2">상단에서 시간대를 선택하고 사진을 업로드하세요.</p>
                         </div>
-                        <div id="activeImageWrapper" class="relative hidden">
-                            <canvas id="imageCanvas"></canvas>
+                        <div class="relative inline-block mx-auto">
+                            <canvas id="imageCanvas" class="hidden"></canvas>
                             <div id="tempBox" class="temp-selection hidden"></div>
                             <div id="fixedBoxesContainer" class="absolute inset-0 pointer-events-none"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Cloud Persistence Controls -->
-                <div class="bg-slate-900 p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div class="flex items-center gap-4">
-                        <div class="bg-blue-500/20 p-3 rounded-2xl">
-                            <span class="text-2xl">☁️</span>
-                        </div>
-                        <div>
-                            <h3 class="text-white font-bold">실험 데이터 서버 보관</h3>
-                            <p class="text-slate-400 text-xs text-center md:text-left">현재 모든 사진과 기록을 서버에 영구 저장합니다.</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-3 w-full md:w-auto">
-                        <button id="saveToServer" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl font-bold text-sm transition">
-                            서버에 저장하기
-                        </button>
-                        <button id="loadFromServer" class="flex-1 md:flex-none bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl font-bold text-sm transition border border-slate-700">
-                            불러오기
-                        </button>
-                        <button id="resetAllData" class="flex-1 md:flex-none bg-rose-600 hover:bg-rose-500 text-white px-6 py-3 rounded-2xl font-bold text-sm transition">
-                            전체 초기화
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="lg:col-span-5 flex flex-col space-y-8">
                 <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-                    <div class="flex flex-col space-y-6">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-extrabold text-slate-400 mb-2 uppercase tracking-wider text-center lg:text-left">용액 종류</label>
-                                <select id="solutionSelect" class="block w-full border border-slate-100 rounded-2xl p-3.5 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 font-bold outline-none cursor-pointer appearance-none text-center">
-                                    <option value="증류수">증류수</option>
-                                    <option value="주방세제">주방세제</option>
-                                    <option value="베이킹소다">베이킹소다</option>
-                                    <option value="과탄산소다">과탄산소다</option>
-                                    <option value="세탁세제">세탁세제</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-extrabold text-slate-400 mb-2 uppercase tracking-wider text-center lg:text-left">시간</label>
-                                <select id="timeSelect" class="block w-full border border-slate-100 rounded-2xl p-3.5 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 font-bold outline-none cursor-pointer appearance-none text-center">
-                                    <option value="10분">10분</option>
-                                    <option value="15분">15분</option>
-                                    <option value="20분">20분</option>
-                                    <option value="24시간">24시간</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-extrabold text-slate-400 mb-2 uppercase tracking-wider text-center lg:text-left">실시간 측정 (R: 투과성 지표)</label>
-                            <div class="flex gap-2">
-                                <div id="rDisplay" class="flex-1 bg-white p-4 rounded-2xl text-center font-mono text-sm border-2 border-rose-100 text-rose-600 font-extrabold">R: 0</div>
-                                <div id="gDisplay" class="flex-1 bg-white p-4 rounded-2xl text-center font-mono text-sm border-2 border-emerald-100 text-emerald-600 font-extrabold">G: 0</div>
-                                <div id="bDisplay" class="flex-1 bg-white p-4 rounded-2xl text-center font-mono text-sm border-2 border-blue-100 text-blue-600 font-extrabold">B: 0</div>
-                            </div>
-                        </div>
-
-                        <button id="addRecord" class="bg-slate-900 hover:bg-black text-white px-4 py-4 rounded-2xl transition shadow-xl font-bold text-sm w-full">
-                            이 결과를 실험 로그에 기록
-                        </button>
-                    </div>
-
-                    <div class="mt-8">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-sm font-extrabold text-slate-800">실험 로그</h2>
-                            <select id="filterSolution" class="text-[10px] border border-slate-200 rounded-xl px-2 py-1 bg-slate-50 font-bold outline-none">
-                                <option value="all">전체</option>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-extrabold text-slate-400 mb-3 uppercase tracking-wider">용액 종류</label>
+                            <select id="solutionSelect" class="block w-full border border-slate-100 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 font-bold outline-none cursor-pointer appearance-none">
                                 <option value="증류수">증류수</option>
                                 <option value="주방세제">주방세제</option>
                                 <option value="베이킹소다">베이킹소다</option>
@@ -237,27 +153,65 @@
                                 <option value="세탁세제">세탁세제</option>
                             </select>
                         </div>
-                        <div class="overflow-x-auto rounded-2xl border border-slate-100">
-                            <table class="w-full text-[11px] border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50/50 border-b border-slate-100">
-                                        <th class="py-3 px-3 text-left text-slate-400 font-extrabold">용액</th>
-                                        <th class="py-3 px-1 text-center text-slate-400 font-extrabold">10m</th>
-                                        <th class="py-3 px-1 text-center text-slate-400 font-extrabold">15m</th>
-                                        <th class="py-3 px-1 text-center text-slate-400 font-extrabold">20m</th>
-                                        <th class="py-3 px-1 text-center text-slate-400 font-extrabold">24h</th>
-                                        <th class="py-3 px-3"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="horizontalTableBody" class="divide-y divide-slate-50"></tbody>
-                            </table>
+                        <div class="md:col-span-1">
+                            <label class="block text-xs font-extrabold text-slate-400 mb-3 uppercase tracking-wider">시간</label>
+                            <select id="timeSelect" class="block w-full border border-slate-100 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50 font-bold outline-none cursor-pointer appearance-none">
+                                <option value="10분">10분</option>
+                                <option value="15분">15분</option>
+                                <option value="20분">20분</option>
+                                <option value="24시간">24시간</option>
+                            </select>
                         </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-extrabold text-slate-400 mb-3 uppercase tracking-wider">평균 결과값</label>
+                            <div class="flex gap-2">
+                                <div id="rDisplay" class="flex-1 bg-white p-4 rounded-2xl text-center font-mono text-sm border-2 border-rose-100 text-rose-600 font-extrabold">R: 0</div>
+                                <div id="gDisplay" class="flex-1 bg-white p-4 rounded-2xl text-center font-mono text-sm border-2 border-emerald-100 text-emerald-600 font-extrabold">G: 0</div>
+                                <div id="bDisplay" class="flex-1 bg-white p-4 rounded-2xl text-center font-mono text-sm border-2 border-blue-100 text-blue-600 font-extrabold">B: 0</div>
+                            </div>
+                        </div>
+                        <button id="addRecord" class="bg-slate-900 hover:bg-black text-white px-4 py-4.5 rounded-2xl transition shadow-xl font-bold text-sm w-full h-[56px]">
+                            데이터 저장
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 flex flex-col space-y-8">
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-extrabold text-slate-800">실험 로그</h2>
+                        <select id="filterSolution" class="text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 font-bold outline-none">
+                            <option value="all">전체 용액</option>
+                            <option value="증류수">증류수</option>
+                            <option value="주방세제">주방세제</option>
+                            <option value="베이킹소다">베이킹소다</option>
+                            <option value="과탄산소다">과탄산소다</option>
+                            <option value="세탁세제">세탁세제</option>
+                        </select>
+                    </div>
+                    
+                    <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                        <table class="w-full text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 border-b border-slate-100">
+                                    <th class="py-4 px-4 text-left text-slate-400 font-extrabold uppercase tracking-widest">용액 종류</th>
+                                    <th class="py-4 px-1 text-center text-slate-400 font-extrabold">10분</th>
+                                    <th class="py-4 px-1 text-center text-slate-400 font-extrabold">15분</th>
+                                    <th class="py-4 px-1 text-center text-slate-400 font-extrabold">20분</th>
+                                    <th class="py-4 px-1 text-center text-slate-400 font-extrabold">24시간</th>
+                                    <th class="py-4 px-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="horizontalTableBody" class="divide-y divide-slate-50"></tbody>
+                        </table>
                     </div>
                 </div>
 
                 <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 flex-grow">
                     <div class="flex items-center justify-between mb-8">
-                        <h2 class="text-xl font-extrabold text-slate-800 text-center lg:text-left w-full">투과성 변화 곡선</h2>
+                        <h2 class="text-xl font-extrabold text-slate-800">투과성 변화 곡선</h2>
+                        <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
                     </div>
                     <div class="chart-wrapper">
                         <canvas id="resultChart"></canvas>
@@ -267,24 +221,9 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Setup
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'bit-permeability-analysis';
-        
-        let currentUser = null;
-
-        // UI Elements
+    <script>
         const imageInput = document.getElementById('imageInput');
         const canvas = document.getElementById('imageCanvas');
-        const activeImageWrapper = document.getElementById('activeImageWrapper');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const tempBox = document.getElementById('tempBox');
         const fixedBoxesContainer = document.getElementById('fixedBoxesContainer');
@@ -295,7 +234,6 @@
         const timeSelect = document.getElementById('timeSelect');
         const horizontalTableBody = document.getElementById('horizontalTableBody');
         const filterSolution = document.getElementById('filterSolution');
-        const loadingOverlay = document.getElementById('loadingOverlay');
 
         const timeOrder = ['10분', '15분', '20분', '24시간'];
         const solutionOrder = ['증류수', '주방세제', '베이킹소다', '과탄산소다', '세탁세제'];
@@ -304,26 +242,16 @@
             '과탄산소다': '#8b5cf6', '세탁세제': '#f43f5e'
         };
 
-        // State
         let currentSlot = 0;
-        let slots = Array.from({ length: 4 }, () => ({ imgData: null, boxes: [] }));
+        const slots = Array.from({ length: 4 }, () => ({ img: null, boxes: [] }));
         let experimentData = [];
         let currentRGB = { r: 0, g: 0, b: 0 };
         let isDragging = false;
         let startX, startY;
 
-        // Auth initialization
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-            } else {
-                signInAnonymously(auth);
-            }
-        });
-
-        // Chart Setup
         Chart.defaults.font.family = "'Inter', 'Apple SD Gothic Neo', sans-serif";
         Chart.defaults.color = '#94a3b8';
+
         const chartCtx = document.getElementById('resultChart').getContext('2d');
         const resultChart = new Chart(chartCtx, {
             type: 'line',
@@ -339,57 +267,70 @@
                     pointRadius: 6,
                     pointBackgroundColor: '#fff',
                     pointBorderWidth: 3,
+                    pointHoverRadius: 9,
                     fill: true
                 }))
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: { 
+                    legend: { position: 'bottom', labels: { boxWidth: 12, padding: 25, font: { size: 12, weight: '700' }, color: '#475569' } },
+                    tooltip: { backgroundColor: '#1e293b', padding: 12, titleFont: { size: 14, weight: 'bold' }, cornerRadius: 12 }
+                },
                 scales: {
-                    y: { reverse: true, min: 0, max: 255, title: { display: true, text: 'R Intensity (Redness)' } }
+                    y: { reverse: true, min: 0, max: 255, grid: { color: '#f1f5f9' }, title: { display: true, text: '평균 결과값 (R 강도)', font: { size: 12, weight: '700' }, color: '#64748b' } },
+                    x: { grid: { display: false } }
                 }
             }
         });
 
-        // Core Functions
-        window.switchSlot = function(index) {
+        function switchSlot(index) {
             currentSlot = index;
             document.querySelectorAll('.slot-btn').forEach((btn, idx) => btn.classList.toggle('active', idx === index));
             timeSelect.value = timeOrder[index];
             renderCanvas();
-        };
+        }
 
-        async function renderCanvas() {
+        function renderCanvas() {
             const slot = slots[currentSlot];
             fixedBoxesContainer.innerHTML = '';
-            
-            if (!slot.imgData) {
-                activeImageWrapper.classList.add('hidden');
+            if (!slot.img) {
+                canvas.classList.add('hidden');
                 placeholder.classList.remove('hidden');
                 rDisplay.innerText = 'R: 0'; gDisplay.innerText = 'G: 0'; bDisplay.innerText = 'B: 0';
                 currentRGB = { r: 0, g: 0, b: 0 };
                 return;
             }
-
-            activeImageWrapper.classList.remove('hidden');
+            canvas.classList.remove('hidden');
             placeholder.classList.add('hidden');
 
-            const img = new Image();
-            img.onload = () => {
-                const container = document.getElementById('canvas-container');
-                const availableWidth = container.clientWidth - 64; // Horizontal padding
-                const aspect = img.height / img.width;
-                
-                canvas.width = img.width;
-                canvas.height = img.height;
-                canvas.style.width = availableWidth + "px";
-                canvas.style.height = (availableWidth * aspect) + "px";
+            const container = document.getElementById('canvas-container');
+            const availableWidth = container.clientWidth - 40;
+            const aspect = slot.img.height / slot.img.width;
+            
+            canvas.width = slot.img.width;
+            canvas.height = slot.img.height;
+            canvas.style.width = availableWidth + "px";
+            canvas.style.height = (availableWidth * aspect) + "px";
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                slot.boxes.forEach(box => createBoxElement(box));
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(slot.img, 0, 0);
+
+            slot.boxes.forEach(box => createBoxElement(box));
+        }
+
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (evt.clientX - rect.left) * scaleX,
+                y: (evt.clientY - rect.top) * scaleY,
+                screenX: evt.clientX - rect.left,
+                screenY: evt.clientY - rect.top
             };
-            img.src = slot.imgData;
         }
 
         function createBoxElement(box) {
@@ -419,51 +360,50 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (event) => {
-                slots[currentSlot].imgData = event.target.result;
-                slots[currentSlot].boxes = [];
-                renderCanvas();
+                const img = new Image();
+                img.onload = () => {
+                    slots[currentSlot].img = img;
+                    slots[currentSlot].boxes = [];
+                    renderCanvas();
+                };
+                img.src = event.target.result;
             };
             reader.readAsDataURL(file);
             imageInput.value = ''; 
         });
 
-        // Interaction
-        function getMousePos(evt) {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            return {
-                x: (evt.clientX - rect.left) * scaleX,
-                y: (evt.clientY - rect.top) * scaleY,
-                screenX: evt.clientX - rect.left,
-                screenY: evt.clientY - rect.top
-            };
-        }
-
         canvas.addEventListener('mousedown', (e) => {
-            if (!slots[currentSlot].imgData) return;
+            if (!slots[currentSlot].img) return;
             isDragging = true;
             const pos = getMousePos(e);
-            startX = pos.x; startY = pos.y;
+            startX = pos.x;
+            startY = pos.y;
+            
             tempBox.classList.remove('hidden');
+            tempBox.style.left = pos.screenX + 'px';
+            tempBox.style.top = pos.screenY + 'px';
+            tempBox.style.width = '0px';
+            tempBox.style.height = '0px';
+            tempBox.style.borderColor = solutionColors[document.getElementById('solutionSelect').value];
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const pos = getMousePos(e);
+            
             const l = Math.min(startX, pos.x);
             const t = Math.min(startY, pos.y);
             const w = Math.abs(pos.x - startX);
             const h = Math.abs(pos.y - startY);
 
             const rect = canvas.getBoundingClientRect();
-            const sx = rect.width / canvas.width;
-            const sy = rect.height / canvas.height;
+            const scaleX = rect.width / canvas.width;
+            const scaleY = rect.height / canvas.height;
 
-            tempBox.style.width = (w * sx) + 'px';
-            tempBox.style.height = (h * sy) + 'px';
-            tempBox.style.left = (l * sx) + 'px';
-            tempBox.style.top = (t * sy) + 'px';
+            tempBox.style.width = (w * scaleX) + 'px';
+            tempBox.style.height = (h * scaleY) + 'px';
+            tempBox.style.left = (l * scaleX) + 'px';
+            tempBox.style.top = (t * scaleY) + 'px';
             
             if (w > 1 && h > 1) {
                 const imageData = ctx.getImageData(l, t, Math.max(1, w), Math.max(1, h));
@@ -484,6 +424,7 @@
             if (!isDragging) return;
             isDragging = false;
             const pos = getMousePos(e);
+            
             const l = Math.min(startX, pos.x);
             const t = Math.min(startY, pos.y);
             const w = Math.abs(pos.x - startX);
@@ -498,7 +439,11 @@
             tempBox.classList.add('hidden');
         });
 
-        // Records & UI Update
+        document.getElementById('clearBoxes').addEventListener('click', () => {
+            slots[currentSlot].boxes = [];
+            renderCanvas();
+        });
+
         document.getElementById('addRecord').addEventListener('click', () => {
             if (currentRGB.r === 0 && currentRGB.g === 0) return;
             const time = document.getElementById('timeSelect').value;
@@ -509,15 +454,17 @@
             updateUI();
         });
 
-        window.deleteSingleEntry = (sol, time) => {
+        function deleteSingleEntry(sol, time) {
             experimentData = experimentData.filter(d => !(d.solution === sol && d.time === time));
             updateUI();
-        };
+        }
 
-        window.deleteRow = (sol) => {
+        function deleteRow(sol) {
             experimentData = experimentData.filter(d => d.solution !== sol);
             updateUI();
-        };
+        }
+
+        filterSolution.addEventListener('change', updateUI);
 
         function updateUI() {
             horizontalTableBody.innerHTML = '';
@@ -525,13 +472,14 @@
             solutionOrder.forEach(solName => {
                 if (solFilter !== 'all' && solFilter !== solName) return;
                 const row = document.createElement('tr');
-                let html = `<td class="py-3 px-3 font-extrabold" style="color:${solutionColors[solName]}">${solName}</td>`;
+                row.className = 'hover:bg-slate-50/50 transition';
+                let html = `<td class="py-4 px-4 font-extrabold" style="color:${solutionColors[solName]}">${solName}</td>`;
                 timeOrder.forEach(timeLabel => {
                     const data = experimentData.find(d => d.solution === solName && d.time === timeLabel);
-                    if (data) html += `<td class="text-center"><span class="data-value font-mono font-extrabold" onclick="window.deleteSingleEntry('${solName}', '${timeLabel}')">${data.r}</span></td>`;
-                    else html += `<td class="text-center text-slate-200">-</td>`;
+                    if (data) html += `<td class="text-center"><span class="data-value font-mono text-slate-900 font-extrabold" onclick="deleteSingleEntry('${solName}', '${timeLabel}')">${data.r}</span></td>`;
+                    else html += `<td class="text-center text-slate-200">/</td>`;
                 });
-                html += `<td class="py-3 px-3 text-right"><button onclick="window.deleteRow('${solName}')" class="text-slate-300 hover:text-rose-500">✕</button></td>`;
+                html += `<td class="py-4 px-4 text-right"><button onclick="deleteRow('${solName}')" class="w-8 h-8 rounded-full hover:bg-rose-50 text-slate-300 hover:text-rose-500 transition flex items-center justify-center">✕</button></td>`;
                 row.innerHTML = html;
                 horizontalTableBody.appendChild(row);
             });
@@ -545,68 +493,10 @@
             resultChart.update();
         }
 
-        filterSolution.addEventListener('change', updateUI);
-
-        // Firestore Integration
-        document.getElementById('saveToServer').addEventListener('click', async () => {
-            if (!currentUser) {
-                alert("인증 오류가 발생했습니다.");
-                return;
-            }
-            loadingOverlay.style.display = 'flex';
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'experimentData', 'main_state');
-                await setDoc(docRef, {
-                    slots: slots,
-                    experimentData: experimentData,
-                    updatedAt: new Date().toISOString()
-                });
-                alert("서버에 성공적으로 저장되었습니다.");
-            } catch (error) {
-                alert("저장 중 오류가 발생했습니다.");
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        });
-
-        document.getElementById('loadFromServer').addEventListener('click', async () => {
-            if (!currentUser) return;
-            loadingOverlay.style.display = 'flex';
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'experimentData', 'main_state');
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    slots = data.slots;
-                    experimentData = data.experimentData;
-                    updateUI();
-                    renderCanvas();
-                    alert("데이터를 성공적으로 불러왔습니다.");
-                } else {
-                    alert("저장된 데이터가 없습니다.");
-                }
-            } catch (error) {
-                alert("불러오기 중 오류가 발생했습니다.");
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        });
-
-        document.getElementById('resetAllData').addEventListener('click', () => {
-            if (confirm("모든 데이터를 초기화하시겠습니까?")) {
-                slots = Array.from({ length: 4 }, () => ({ imgData: null, boxes: [] }));
-                experimentData = [];
-                updateUI();
-                renderCanvas();
-            }
-        });
-
-        document.getElementById('clearCurrentSlot').addEventListener('click', () => {
-            slots[currentSlot] = { imgData: null, boxes: [] };
-            renderCanvas();
-        });
-
         window.addEventListener('resize', renderCanvas);
+        window.switchSlot = switchSlot;
+        window.deleteSingleEntry = deleteSingleEntry;
+        window.deleteRow = deleteRow;
     </script>
 </body>
 </html>
